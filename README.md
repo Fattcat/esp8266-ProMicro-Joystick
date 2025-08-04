@@ -1,5 +1,6 @@
 # esp8266-ProMicro-Joystick
 Remote control cursor with joystick
+
 ## Connection
 ### esp32 - Arduino JoyStick
 - 3.3V -> VCC
@@ -14,4 +15,5 @@ Remote control cursor with joystick
 - D8 -> TX0
 - D7 -> RX1
 
-- Upload codes and u re ready to go :D
+### Please support my job with Github Star 
+## Upload codes and u re ready to go :D
