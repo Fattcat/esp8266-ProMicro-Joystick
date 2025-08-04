@@ -1,50 +1,32 @@
-#include <Mouse.h>
-#include <ArduinoJson.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 
-const int ledPin = 7;
-bool wifiConnected = false;
+const char* ssid = "RemoteControl";
+const char* password = "RemoteControlCursor";
+const char* host = "192.168.4.1";
 
 void setup() {
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-  Serial1.begin(9600); // Prijíma od ESP8266
-  Mouse.begin();
+  Serial.begin(9600); // Komunikácia s Pro Micro
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
 }
 
 void loop() {
-  if (Serial1.available()) {
-    String json = Serial1.readStringUntil('\n');
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("http://" + String(host) + "/");
+    int httpCode = http.GET();
 
-    StaticJsonDocument<128> doc;
-    DeserializationError error = deserializeJson(doc, json);
-
-    if (!error) {
-      int x = doc["x"];
-      int y = doc["y"];
-      int btn = doc["btn"];
-
-      // Prestavba na delta
-      int dx = map(x, 0, 1023, -10, 10);
-      int dy = map(y, 0, 1023, -10, 10);
-
-      // Pohnutie kurzora
-      Mouse.move(dx, dy, 0);
-
-      // Tlačidlo
-      if (btn == 1) {
-        Mouse.press(MOUSE_LEFT);
-      } else {
-        Mouse.release(MOUSE_LEFT);
-      }
-
-      // Signalizácia pripojenia
-      if (!wifiConnected) {
-        digitalWrite(ledPin, HIGH);
-        wifiConnected = true;
-      }
-    } else {
-      digitalWrite(ledPin, LOW);
-      wifiConnected = false;
+    if (httpCode == 200) {
+      String payload = http.getString();
+      Serial.println(payload); // Posielame Pro Micro
     }
+
+    http.end();
   }
+
+  delay(50); // Rýchlosť aktualizácie
 }
