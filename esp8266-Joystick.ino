@@ -1,32 +1,33 @@
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+#include <ESP8266WebServer.h>
 
 const char* ssid = "RemoteControl";
 const char* password = "RemoteControlCursor";
-const char* host = "192.168.4.1";
+
+ESP8266WebServer server(80);
+
+// Joystick piny
+const int joyX = A0;
+const int joyY = A1;
+const int joyBtn = D2;
+
+void handleRoot() {
+  int x = analogRead(joyX);
+  int y = analogRead(joyY);
+  int button = digitalRead(joyBtn) == LOW ? 1 : 0;
+
+  String json = "{\"x\":" + String(x) + ",\"y\":" + String(y) + ",\"btn\":" + String(button) + "}";
+  server.send(200, "application/json", json);
+}
 
 void setup() {
-  Serial.begin(9600); // Komunikácia s Pro Micro
-  WiFi.begin(ssid, password);
+  pinMode(joyBtn, INPUT_PULLUP);
+  WiFi.softAP(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-  }
+  server.on("/", handleRoot);
+  server.begin();
 }
 
 void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    http.begin("http://" + String(host) + "/");
-    int httpCode = http.GET();
-
-    if (httpCode == 200) {
-      String payload = http.getString();
-      Serial.println(payload); // Posielame Pro Micro
-    }
-
-    http.end();
-  }
-
-  delay(50); // Rýchlosť aktualizácie
+  server.handleClient();
 }
