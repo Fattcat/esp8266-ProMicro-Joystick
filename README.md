@@ -15,5 +15,9 @@ Remote control cursor with joystick
 - D8 -> TX0
 - D7 -> RX1
 
+## Led Status
+- if led is blinking fast, it mens D1 mini trying to connect to esp32 WiFi
+- if lights stable, it means connetion is OK
+
 ### Please support my job with Github Star 
 ## Upload codes and u re ready to go :D
