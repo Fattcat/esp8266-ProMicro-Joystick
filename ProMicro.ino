@@ -1,50 +1,37 @@
-#include <Mouse.h>
 #include <ArduinoJson.h>
-
-const int ledPin = 7;
-bool wifiConnected = false;
+#include <Mouse.h>
 
 void setup() {
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-  Serial1.begin(9600); // Prijíma od ESP8266
+  Serial.begin(9600);      // Debug cez USB
+  Serial1.begin(9600);     // UART z D1 mini (na pin 0)
   Mouse.begin();
 }
 
 void loop() {
-  if (Serial1.available()) {
-    String json = Serial1.readStringUntil('\n');
+  static String input = "";
 
-    StaticJsonDocument<128> doc;
-    DeserializationError error = deserializeJson(doc, json);
+  while (Serial1.available()) {
+    char c = Serial1.read();
+    if (c == '\n') {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, input);
+      if (!err) {
+        int x = doc["x"];
+        int y = doc["y"];
+        int btn = doc["btn"];
 
-    if (!error) {
-      int x = doc["x"];
-      int y = doc["y"];
-      int btn = doc["btn"];
+        int dx = map(x, 0, 4095, -10, 10);
+        int dy = map(y, 0, 4095, -10, 10);
+        Mouse.move(dx, dy);
 
-      // Prestavba na delta
-      int dx = map(x, 0, 1023, -10, 10);
-      int dy = map(y, 0, 1023, -10, 10);
-
-      // Pohnutie kurzora
-      Mouse.move(dx, dy, 0);
-
-      // Tlačidlo
-      if (btn == 1) {
-        Mouse.press(MOUSE_LEFT);
+        if (btn == 1) Mouse.press(MOUSE_LEFT);
+        else          Mouse.release(MOUSE_LEFT);
       } else {
-        Mouse.release(MOUSE_LEFT);
+        Serial.println("JSON parse error: " + input);
       }
-
-      // Signalizácia pripojenia
-      if (!wifiConnected) {
-        digitalWrite(ledPin, HIGH);
-        wifiConnected = true;
-      }
+      input = "";
     } else {
-      digitalWrite(ledPin, LOW);
-      wifiConnected = false;
+      input += c;
     }
   }
 }
