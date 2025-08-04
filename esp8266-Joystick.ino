@@ -1,33 +1,44 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
+#include <ArduinoJson.h>
 
-const char* ssid = "RemoteControl";
-const char* password = "RemoteControlCursor";
+const char* ssid = "HID_WIFI";
+const char* password = "12345678";
 
-ESP8266WebServer server(80);
+WiFiUDP udp;
+const char* d1_ip = "192.168.4.2";
+const int udpPort = 1234;
 
 // Joystick piny
-const int joyX = A0;
-const int joyY = A1;
-const int joyBtn = D2;
-
-void handleRoot() {
-  int x = analogRead(joyX);
-  int y = analogRead(joyY);
-  int button = digitalRead(joyBtn) == LOW ? 1 : 0;
-
-  String json = "{\"x\":" + String(x) + ",\"y\":" + String(y) + ",\"btn\":" + String(button) + "}";
-  server.send(200, "application/json", json);
-}
+#define JOY_X 34
+#define JOY_Y 35
+#define JOY_BTN 32
 
 void setup() {
-  pinMode(joyBtn, INPUT_PULLUP);
-  WiFi.softAP(ssid, password);
+  Serial.begin(115200);
+  pinMode(JOY_BTN, INPUT_PULLUP);
 
-  server.on("/", handleRoot);
-  server.begin();
+  WiFi.softAP(ssid, password);
+  delay(500);
+  Serial.println("ESP32 WiFi HID AP started");
 }
 
 void loop() {
-  server.handleClient();
+  int x = analogRead(JOY_X);
+  int y = analogRead(JOY_Y);
+  int btn = digitalRead(JOY_BTN) == LOW ? 1 : 0;
+
+  StaticJsonDocument<128> doc;
+  doc["x"] = x;
+  doc["y"] = y;
+  doc["btn"] = btn;
+
+  char buffer[128];
+  size_t len = serializeJson(doc, buffer);
+
+  udp.beginPacket(d1_ip, udpPort);
+  udp.write((uint8_t*)buffer, len);
+  udp.endPacket();
+
+  delay(30);
 }
