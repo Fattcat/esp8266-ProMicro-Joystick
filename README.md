@@ -21,3 +21,8 @@ Remote control cursor with joystick
 
 ### Please support my job with Github Star 
 ## Upload codes and u re ready to go :D
+
+## Fixed & added
+- Joystick drifting
+- Added auto-speed
+
